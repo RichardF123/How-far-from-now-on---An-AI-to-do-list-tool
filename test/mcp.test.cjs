@@ -1,0 +1,22 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const os=require('node:os');const path=require('node:path');const crypto=require('node:crypto');
+const {Core}=require('../src/core.cjs');const {startBridge}=require('../src/bridge.cjs');
+test('real SDK stdio client can verify, read records, commit review and recover receipt',async t=>{
+ const {Client}=await import('@modelcontextprotocol/sdk/client/index.js');const {StdioClientTransport}=await import('@modelcontextprotocol/sdk/client/stdio.js');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mentor-mcp-'));let changes=0;const core=await Core.open(dir,()=>changes++);
+ const token=crypto.randomBytes(32).toString('hex');const bridge=await startBridge(core,token);
+ const transport=new StdioClientTransport({command:process.env.MENTOR_ADAPTER_COMMAND||process.execPath,args:[process.env.MENTOR_ADAPTER_SCRIPT||path.resolve('src/mcp.cjs')],env:{...process.env,...(process.env.MENTOR_ADAPTER_COMMAND?{ELECTRON_RUN_AS_NODE:'1'}:{}),LEARNING_MENTOR_DATA:dir}});const client=new Client({name:'integration-test',version:'1.0'});
+ t.after(async()=>{await client.close();await new Promise(resolve=>bridge.close(resolve));core.close();fs.rmSync(dir,{recursive:true,force:true});});
+ fs.writeFileSync(path.join(dir,'connection.json'),JSON.stringify({port:bridge.address().port,token}));
+ const g=core.createGoal({title:'集成测试方向',objective:'验证完整同步',standards:{coverage:'有记录',understanding:'能解释',application:'有作品'}});core.setConnection(true);
+ await client.connect(transport);const list=await client.listTools();assert.equal(list.tools.length,10);
+ const call=async(name,args={})=>{const r=await client.callTool({name,arguments:args});assert.equal(r.isError,undefined,r.content?.[0]?.text);return JSON.parse(r.content[0].text);};
+ await call('verify_connection');assert.ok(core.state.connection.verifiedAt);
+ const record=await call('append_learning_record',{goalId:g.id,content:'测试已保存的学习内容'});
+ const ctx=await call('begin_review',{goalId:g.id});assert.equal(ctx.records[0].id,record.id);
+ const ev=await call('read_evidence',{requestId:ctx.review.id,evidenceId:record.id});assert.equal(ev.content,'测试已保存的学习内容');
+ const receipt=await call('commit_review',{requestId:ctx.review.id,attemptId:ctx.review.attemptId,idempotencyKey:'integration',judgements:['coverage','understanding','application'].map(d=>({dimension:d,level:d==='coverage'?'emerging':'unknown',rationale:'仅验证工具链，不代表真实能力',evidenceIds:d==='coverage'?[record.id]:[]})),confidence:'low',confidenceReason:'仅有一条测试记录',observation:'这是协议集成测试结果',report:{facts:[{text:'保存了一条测试记录',evidenceIds:[record.id]}],observation:'这不是实际用户评估。'}});
+ assert.equal(receipt.committed,true);assert.equal(core.snapshot().reports.length,1);assert.equal(core.snapshot().assessments[0].score,5);assert.ok(changes>=5);
+ assert.deepEqual(await call('get_commit_receipt',{idempotencyKey:'integration'}),receipt);
+ const bad=await fetch(`http://127.0.0.1:${bridge.address().port}/tool`,{method:'POST',headers:{authorization:`Bearer ${token}`,origin:'https://evil.example'},body:'{}'});assert.equal(bad.status,403);
+ const unauthorized=await fetch(`http://127.0.0.1:${bridge.address().port}/tool`,{method:'POST',body:'{}'});assert.equal(unauthorized.status,401);
+});
