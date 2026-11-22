@@ -1,8 +1,8 @@
 @echo off
 cd /d "%~dp0"
 set ELECTRON_RUN_AS_NODE=
-if exist "release\LearningMentor-win32-x64\LearningMentor.exe" (
-  start "" "release\LearningMentor-win32-x64\LearningMentor.exe"
+if exist "release-v0.2\LearningMentor-win32-x64\LearningMentor.exe" (
+  start "" "release-v0.2\LearningMentor-win32-x64\LearningMentor.exe"
 ) else (
   if exist "node_modules\electron\dist\electron.exe" (
     start "" "node_modules\electron\dist\electron.exe" .

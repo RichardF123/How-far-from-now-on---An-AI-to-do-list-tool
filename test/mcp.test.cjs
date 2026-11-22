@@ -8,7 +8,7 @@ test('real SDK stdio client can verify, read records, commit review and recover 
  t.after(async()=>{await client.close();await new Promise(resolve=>bridge.close(resolve));core.close();fs.rmSync(dir,{recursive:true,force:true});});
  fs.writeFileSync(path.join(dir,'connection.json'),JSON.stringify({port:bridge.address().port,token}));
  const g=core.createGoal({title:'集成测试方向',objective:'验证完整同步',standards:{coverage:'有记录',understanding:'能解释',application:'有作品'}});core.setConnection(true);
- await client.connect(transport);const list=await client.listTools();assert.equal(list.tools.length,10);
+ await client.connect(transport);const list=await client.listTools();assert.ok(list.tools.some(t=>t.name==='list_goals'));assert.ok(list.tools.some(t=>t.name==='append_goal_record'));assert.ok(list.tools.some(t=>t.name==='list_learning_goals'));assert.ok(list.tools.some(t=>t.name==='append_learning_record'));
  const call=async(name,args={})=>{const r=await client.callTool({name,arguments:args});assert.equal(r.isError,undefined,r.content?.[0]?.text);return JSON.parse(r.content[0].text);};
  await call('verify_connection');assert.ok(core.state.connection.verifiedAt);
  const record=await call('append_learning_record',{goalId:g.id,content:'测试已保存的学习内容'});

@@ -24,11 +24,11 @@ else app.whenReady().then(async () => {
   token = crypto.randomBytes(32).toString('hex');
   bridge = await startBridge(core, token);
   fs.writeFileSync(path.join(dataDir, 'connection.json'), JSON.stringify({ port: bridge.address().port, token }), { mode: 0o600 });
-  win = new BrowserWindow({ width: 1180, height: 820, minWidth: 780, minHeight: 640, show: !capture, frame: false, backgroundColor: '#edf2fb', title: '长期学习导师', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: !capture } });
+  win = new BrowserWindow({ width: 1180, height: 820, minWidth: 780, minHeight: 640, show: !capture, frame: false, backgroundColor: '#edf2fb', title: '长期目标助手', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: !capture } });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.webContents.on('console-message', (_event, level, message) => { if (capture) process.stderr.write(`renderer: ${message}\n`); });
-  win.webContents.on('render-process-gone', () => { dialog.showErrorBox('界面已停止', '学习记录已保存在本机，请重新打开应用。'); });
+  win.webContents.on('render-process-gone', () => { dialog.showErrorBox('界面已停止', '目标记录已保存在本机，请重新打开应用。'); });
   const handle = (name, fn) => ipcMain.handle(name, async (event, ...args) => {
    if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) throw new Error('无效来源');
    try { return { ok: true, value: await fn(...args) }; } catch(e) { return { ok: false, code: e.code || 'LOCAL_ERROR', message: e.code ? e.message : '操作失败，请检查文件、磁盘空间或连接后重试' }; }
@@ -36,7 +36,7 @@ else app.whenReady().then(async () => {
   handle('snapshot', () => core.snapshot());
   handle('create-goal', a => core.createGoal(a));
   handle('choose-files', async () => {
-   const result = await dialog.showOpenDialog(win, { title: '添加学习材料', properties: ['openFile','multiSelections'] });
+   const result = await dialog.showOpenDialog(win, { title: '添加相关材料', properties: ['openFile','multiSelections'] });
    if (result.canceled) return [];
    return result.filePaths.map(f => { const key = crypto.randomUUID(); selected.set(key, f); return { id: key, name: path.basename(f), size: fs.statSync(f).size }; });
   });
@@ -59,8 +59,8 @@ else app.whenReady().then(async () => {
    const pixels = Buffer.alloc(16 * 16 * 4);
    for(let y=1;y<15;y++)for(let x=1;x<15;x++){ const i=(y*16+x)*4; const book=y>3&&y<12&&((x>3&&x<7)||(x>8&&x<12)); pixels[i]=book?255:255; pixels[i+1]=book?255:122; pixels[i+2]=book?255:0; pixels[i+3]=255; }
    const icon = nativeImage.createFromBitmap(pixels, { width:16, height:16 });
-   tray = new Tray(icon); tray.setToolTip('长期学习导师');
-   tray.setContextMenu(Menu.buildFromTemplate([{ label: '打开学习导师', click: () => win.show() }, { label: '退出', click: () => { exiting = true; app.quit(); } }]));
+   tray = new Tray(icon); tray.setToolTip('长期目标助手');
+   tray.setContextMenu(Menu.buildFromTemplate([{ label: '打开目标助手', click: () => win.show() }, { label: '退出', click: () => { exiting = true; app.quit(); } }]));
    tray.on('click', () => win.show());
    win.on('close', event => { if(!exiting) { event.preventDefault(); win.hide(); } });
   }
@@ -77,14 +77,14 @@ else app.whenReady().then(async () => {
    fs.writeFileSync(path.join(captureDir, 'desktop.png'), image.toPNG());
    const status = await win.webContents.executeJavaScript(`({ text: document.body.innerText, errors: window.__uiErrors || [], layout: [...document.querySelectorAll('.track span,.widget-actions,.widget-actions button')].map(el=>({class:el.className,text:el.innerText,style:el.getAttribute('style'),width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height,x:el.getBoundingClientRect().x,y:el.getBoundingClientRect().y,visibility:getComputedStyle(el).visibility,opacity:getComputedStyle(el).opacity})) })`);
    fs.writeFileSync(path.join(captureDir, 'render-status.json'), JSON.stringify(status, null, 2));
-   for(const [label, filename] of [['进度详情','progress.png'],['记录','record.png'],['Agent 设置','connection.png']]) {
-    await win.webContents.executeJavaScript(`(()=>{const close=document.querySelector('[aria-label="关闭面板"]');if(close)close.click();const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)});if(b)b.click();})()`);
+   for(const [label, filename] of [['进度详情','progress.png'],['记录','record.png'],['Agent 设置','connection.png'],['__create_goal__','create-goal.png']]) {
+    await win.webContents.executeJavaScript(`(()=>{const close=document.querySelector('[aria-label="关闭面板"]');if(close)close.click();const b=${JSON.stringify(label)}==='__create_goal__'?document.querySelector('button[title="添加目标"]'):[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)});if(b)b.click();})()`);
     await new Promise(resolve=>setTimeout(resolve,400));
     fs.writeFileSync(path.join(captureDir,filename),(await win.webContents.capturePage()).toPNG());
    }
    app.quit();
   }
- } catch(e) { if(capture) process.stderr.write(`${e.stack}\n`); else dialog.showErrorBox('无法启动学习导师', e.message); app.exit(1); }
+ } catch(e) { if(capture) process.stderr.write(`${e.stack}\n`); else dialog.showErrorBox('无法启动目标助手', e.message); app.exit(1); }
 });
 app.on('second-instance', () => { win?.show(); win?.focus(); });
 app.on('before-quit', () => { exiting = true; if(bridge) { bridge.close(); try { const f=path.join(dataDir,'connection.json'); if(JSON.parse(fs.readFileSync(f,'utf8')).token===token)fs.unlinkSync(f); } catch {} } core?.close(); });

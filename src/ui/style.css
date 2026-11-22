@@ -4,3 +4,7 @@
 aside{overflow-y:auto;padding-bottom:3px}.widget,.status-line,nav,.connection-link{flex-shrink:0}.connection-link{padding-bottom:2px}@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 
 .track span{transition:none}.widget-objective{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:22px}.widget-body{padding:19px 23px}.widget-observation{margin:16px 0 9px;-webkit-line-clamp:2}nav{margin:16px 0}.connection-link p{margin-top:4px}
+
+.form-select{font:inherit;color:#38445a;background:#fff;border:1px solid #dce0e8;border-radius:9px;padding:11px 12px;min-width:0;width:100%}.criteria-editor{margin-top:25px;border-top:1px solid #e7ecf4;padding-top:21px}.criterion-editor{margin-top:17px;border:1px solid #e2e8f2;border-radius:12px;padding:14px}.criterion-controls{display:flex;align-items:center;gap:10px;margin-bottom:10px}.criterion-controls>input{flex:1;min-width:0}.criterion-controls .weight-field{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:400;margin:0;color:#7e8ba0}.weight-field input{width:65px;padding:9px 6px}.criterion-editor>textarea{width:100%}.criterion-editor>.small{display:block;margin-top:7px}
+
+.scope-caption{color:#8a95a8;font-size:11px;line-height:1.7;margin-top:7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}

@@ -14,3 +14,6 @@ attachments/
 !.env.example
 .DS_Store
 Thumbs.db
+
+release-*/
+*.sqlite.*.bak
